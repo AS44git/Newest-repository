@@ -31,11 +31,33 @@ so there's nothing for TikTok to close when the tab is hidden (unlike a
 script that clicks into each video). It automatically waits longer between
 scroll steps while the tab is hidden or minimized, since lazy-loading new
 items can be slower in the background, so it shouldn't mistake "still
-loading" for "reached the bottom." That said, this hasn't been verified
-against TikTok's live page from here — if it seems to stop too early while
-minimized, bring the tab into view and re-run; it'll just re-scroll (fast,
-since the browser has already loaded everything once) and pick up from
-where it left off in practice.
+loading" for "reached the bottom."
+
+## Lag or the tab crashing/reloading on large accounts
+
+At thousands of items, TikTok's own grid keeps adding thumbnails to the
+page without cleaning up after itself — that's TikTok's own memory/
+rendering load, not something this script can fix. It deliberately does
+**not** try to delete TikTok's DOM nodes to work around this: TikTok's
+page is a React app, and forcibly removing nodes React still thinks it
+owns can make the page itself throw and crash — likely worse than the lag.
+
+So instead, the script is built to make a crash cheap to recover from:
+- Progress saves to `localStorage` every 50 new videos found.
+- If you paste the script again after a refresh/crash, it loads what it
+  already found and **fast-forwards** (bigger scroll jumps, shorter waits)
+  back down to roughly where it left off, then switches back to the normal
+  careful pace to keep going from there — so you lose some re-scrolling
+  time, but not the videos you already found.
+
+## No official way to see a total count or reverse the order
+
+Worth setting expectations: TikTok doesn't show a "total videos liked"
+count anywhere in its UI, and there's no way to flip the Liked/Favorites
+grid to show oldest-first — it always paginates newest-to-oldest. Its
+"Download your data" export is also known to truncate Like History for
+large accounts. Scrolling to the bottom (what this script automates) is
+the only way found so far to answer either question.
 
 ## Disclaimer
 
