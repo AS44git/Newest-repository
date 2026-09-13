@@ -50,6 +50,25 @@ So instead, the script is built to make a crash cheap to recover from:
   careful pace to keep going from there — so you lose some re-scrolling
   time, but not the videos you already found.
 
+### Making it feel less laggy
+
+Two things the script does:
+- Pauses any preview videos TikTok autoplays in the grid on every scroll
+  step (these are much heavier on CPU/GPU than static thumbnails; just
+  calling `.pause()` is safe, unlike removing DOM nodes).
+- Scrolls in smaller steps, so fewer new thumbnails get loaded/rendered
+  per batch — smoother, at the cost of taking a bit longer overall.
+
+Things likely to help more, outside what a script can control:
+- **Try an Incognito/InPrivate window with extensions disabled.** An ad
+  blocker or something like Grammarly re-scanning every new DOM node as
+  thousands get added is a common and often bigger source of lag than
+  TikTok's own page.
+- **Zoom the page out** a couple of notches (`Ctrl` + `-`) — less to paint
+  per tile across thousands of tiles adds up.
+- **Close other tabs/apps** to free memory, reducing the odds the browser
+  reclaims memory by killing the tab.
+
 ## No official way to see a total count or reverse the order
 
 Worth setting expectations: TikTok doesn't show a "total videos liked"

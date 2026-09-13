@@ -42,18 +42,40 @@
  * off, then switches to the normal careful pace to keep finding new
  * items from there. So a crash costs you some re-scrolling time, but not
  * lost progress — just paste the script again and let it catch up.
+ *
+ * REDUCING LAG (script does two things, you can do more yourself)
+ * - It pauses any preview videos TikTok autoplays in the grid on every
+ *   scroll (PAUSE_VIDEOS in CONFIG) — these are usually far more CPU/GPU
+ *   hungry than static thumbnails, and just calling .pause() on them is
+ *   safe (no DOM structure change, unlike removing nodes).
+ * - It scrolls in smaller steps than before, so TikTok loads/renders
+ *   fewer new thumbnails per batch — smoother, if a bit slower overall.
+ * Bigger wins are outside the script's control: try an Incognito/InPrivate
+ * window with extensions disabled (an ad blocker or similar rescanning
+ * every new DOM node as thousands get added is a common, large source of
+ * lag), zoom the page out a couple notches, and close other tabs/apps to
+ * free up memory.
  */
 (function () {
   'use strict';
 
   const CONFIG = {
-    // How far to scroll (px) each step.
-    SCROLL_STEP_PX: window.innerHeight * 2.5,
+    // How far to scroll (px) each step. Smaller steps make TikTok load/
+    // render fewer new thumbnails per batch, which tends to look smoother
+    // (less of a stutter per chunk) even though it takes a few more steps
+    // to cover the same distance.
+    SCROLL_STEP_PX: window.innerHeight * 1.2,
     // How long to wait after each scroll before checking for new items
     // (longer when the tab is hidden/minimized — lazy-loading can be
     // slower in the background, and this avoids stopping too early).
-    WAIT_MS: 1500,
+    WAIT_MS: 1200,
     WAIT_HIDDEN_MS: 4000,
+    // Pause any preview videos TikTok autoplays in the grid after each
+    // scroll — these are far more CPU/GPU-hungry than static thumbnails
+    // and are a common source of scroll jank. Just calling .pause() on
+    // them doesn't touch the DOM structure, so it doesn't carry the
+    // React-crash risk that removing nodes would.
+    PAUSE_VIDEOS: true,
     // While catching back up to a previous run's progress (see
     // "LAG / CRASHES" above), scroll faster and wait less — we don't need
     // to carefully detect anything here, just get back down to where we
@@ -94,6 +116,17 @@
     return { id, href: anchor.href };
   }
 
+  function pauseGridVideos() {
+    if (!CONFIG.PAUSE_VIDEOS) return;
+    document.querySelectorAll('video').forEach((v) => {
+      try {
+        if (!v.paused) v.pause();
+      } catch (e) {
+        /* ignore */
+      }
+    });
+  }
+
   const account = location.pathname.split('/')[1] || 'unknown';
   const storageKey = `tt_scroll_results_${account}`;
 
@@ -126,6 +159,7 @@
           seen.set(info.id, info);
         }
       }
+      pauseGridVideos();
 
       if (fastForwarding && anchors.length >= resumeTarget) {
         fastForwarding = false;
